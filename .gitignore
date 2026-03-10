@@ -1,0 +1,22 @@
+# IntelliJ seaded
+.idea/
+*.iml
+out/
+gen/
+
+# Backend (Spring Boot)
+restaurant-reservation-api/target/
+restaurant-reservation-api/.mvn/wrapper/maven-wrapper.jar
+restaurant-reservation-api/.gradle/
+restaurant-reservation-api/build/
+
+# Frontend (Vue/Node)
+restaurant-reservation-ui/node_modules/
+restaurant-reservation-ui/dist/
+restaurant-reservation-ui/dist-ssr/
+restaurant-reservation-ui/*.local
+restaurant-reservation-ui/npm-debug.log*
+
+# Süsteemsed failid
+.DS_Store
+Thumbs.db

@@ -1,11 +1,29 @@
-<script setup lang="ts"></script>
+<script setup>
+import { ref, onMounted } from 'vue';
+import api from './api'; // Meie loodud axios-e fail
+
+const tables = ref([]);
+const error = ref(null);
+
+onMounted(async () => {
+  try {
+    const response = await api.get('/tables');
+    tables.value = response.data;
+    console.log("Andmed käes:", tables.value);
+  } catch (err) {
+    error.value = "Backendi ühendus puudub!";
+    console.error(err);
+  }
+});
+</script>
 
 <template>
-  <h1>You did it!</h1>
-  <p>
-    Visit <a href="https://vuejs.org/" target="_blank" rel="noopener">vuejs.org</a> to read the
-    documentation
-  </p>
-</template>
+  <div>
+    <h1>Saaliplaan</h1>
+    <p v-if="error" style="color: red;">{{ error }}</p>
 
-<style scoped></style>
+    <div v-for="tableTop in tables" :key="tableTop.id">
+      Laud nr {{ tableTop.id }} - Kohti: {{ tableTop.capacity }}
+    </div>
+  </div>
+</template>
