@@ -1,29 +1,28 @@
-<script setup>
-import { ref, onMounted } from 'vue';
-import api from './api'; // Meie loodud axios-e fail
-
-const tables = ref([]);
-const error = ref(null);
-
-onMounted(async () => {
-  try {
-    const response = await api.get('/tables');
-    tables.value = response.data;
-    console.log("Andmed käes:", tables.value);
-  } catch (err) {
-    error.value = "Backendi ühendus puudub!";
-    console.error(err);
-  }
-});
-</script>
-
 <template>
-  <div>
-    <h1>Saaliplaan</h1>
-    <p v-if="error" style="color: red;">{{ error }}</p>
+  <header>
+    <nav>
+      <h1>Nutikas Restoran</h1>
+    </nav>
+  </header>
 
-    <div v-for="tableTop in tables" :key="tableTop.id">
-      Laud nr {{ tableTop.id }} - Kohti: {{ tableTop.capacity }}
-    </div>
-  </div>
+  <main>
+    <RouterView />
+  </main>
 </template>
+
+<style>
+body {
+  margin: 0;
+  font-family: sans-serif;
+  background-color: #f0f2f5;
+}
+header {
+  background-color: #2c3e50;
+  color: white;
+  padding: 1rem;
+  text-align: center;
+}
+main {
+  padding: 20px;
+}
+</style>

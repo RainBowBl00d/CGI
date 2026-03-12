@@ -1,12 +1,15 @@
 package com.example.restaurantreservationapi.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Data;
+
+import java.util.List;
 
 @Data
 @Entity
 
-public class TableTop {
+public class RestaurantTable {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
@@ -21,4 +24,8 @@ public class TableTop {
 	private boolean isQuietArea;
 
 	private boolean isOccupied;
+
+	@ManyToMany(mappedBy = "tables")
+	@JsonBackReference
+	private List<Reservation> reservations;
 }

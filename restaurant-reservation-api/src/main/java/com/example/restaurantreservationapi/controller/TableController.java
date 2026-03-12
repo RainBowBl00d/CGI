@@ -1,5 +1,5 @@
 package com.example.restaurantreservationapi.controller;
-import com.example.restaurantreservationapi.entity.TableTop;
+import com.example.restaurantreservationapi.entity.RestaurantTable;
 import com.example.restaurantreservationapi.service.TableService;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,12 +16,12 @@ public class TableController {
 	}
 
 	@GetMapping
-	public List<TableTop> getTables(){
+	public List<RestaurantTable> getTables(){
 		return tableService.getAllTables();
 	}
 
 	@GetMapping("/recommend")
-	public TableTop getRecommendation(
+	public RestaurantTable getRecommendation(
 			@RequestParam int groupSize,
 			@RequestParam(required = false) boolean prefersWindow){
 		return tableService.recommendBestTable(groupSize, prefersWindow);

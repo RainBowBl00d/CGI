@@ -1,6 +1,6 @@
 package com.example.restaurantreservationapi.service;
 
-import com.example.restaurantreservationapi.entity.TableTop;
+import com.example.restaurantreservationapi.entity.RestaurantTable;
 import com.example.restaurantreservationapi.repository.TableRepository;
 import org.springframework.stereotype.Service;
 
@@ -15,12 +15,12 @@ public class TableService {
 		this.tableRepository = tableRepository;
 	}
 
-	public List<TableTop> getAllTables(){
+	public List<RestaurantTable> getAllTables(){
 		return tableRepository.findAll();
 	}
 
-	public TableTop recommendBestTable(int groupSize, boolean prefersWindow){
-		List<TableTop> freeTableTops = tableRepository.findByIsOccupiedFalse();
+	public RestaurantTable recommendBestTable(int groupSize, boolean prefersWindow){
+		List<RestaurantTable> freeTableTops = tableRepository.findByIsOccupiedFalse();
 
 		return freeTableTops.stream()
 				.filter(t -> t.getCapacity() >= groupSize)
@@ -28,7 +28,7 @@ public class TableService {
 				.orElse(null);
 	}
 
-	private int calculateScore(TableTop tableTop, int groupSize, boolean prefersWindow){
+	private int calculateScore(RestaurantTable tableTop, int groupSize, boolean prefersWindow){
 		int score = (tableTop.getCapacity() - groupSize);
 		if(prefersWindow && ! tableTop.isWindowSeat()) score += 50;
 		return score;
