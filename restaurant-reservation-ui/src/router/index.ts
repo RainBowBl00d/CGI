@@ -1,13 +1,13 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import FloorPlan from '../views/FloorPlan.vue'
+import ReservationView from '../views/ReservationView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/',
-      name: 'floorplan',
-      component: FloorPlan
+      name: 'reservation',
+      component: ReservationView
     }
   ]
 })

@@ -4,8 +4,8 @@ export interface RestaurantTable {
   zone: string;
   x: number;
   y: number;
-  occupied: boolean;
   windowSeat: boolean;
+  quietArea: boolean;
   reservations: Reservation[];
 }
 export interface Reservation{

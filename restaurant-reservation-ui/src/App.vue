@@ -20,7 +20,12 @@ header {
   background-color: #2c3e50;
   color: white;
   padding: 1rem;
+}
+header nav {
   text-align: center;
+}
+header h1 {
+  margin: 0;
 }
 main {
   padding: 20px;
