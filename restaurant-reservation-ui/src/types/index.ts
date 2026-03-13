@@ -4,6 +4,14 @@ export interface RestaurantTable {
   zone: string;
   x: number;
   y: number;
-  isOccupied: boolean;
-  isWindowSeat: boolean;
+  occupied: boolean;
+  windowSeat: boolean;
+  reservations: Reservation[];
+}
+export interface Reservation{
+  id:number;
+  groupSize: number;
+  reservationTimeStart: string;
+  reservationTimeEnd: string;
+  tables: RestaurantTable[];
 }

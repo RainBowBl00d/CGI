@@ -1,8 +1,10 @@
 package com.example.restaurantreservationapi.controller;
 import com.example.restaurantreservationapi.entity.RestaurantTable;
 import com.example.restaurantreservationapi.service.TableService;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -15,6 +17,7 @@ public class TableController {
 		this.tableService = tableService;
 	}
 
+//region Get
 	@GetMapping
 	public List<RestaurantTable> getTables(){
 		return tableService.getAllTables();
@@ -23,7 +26,22 @@ public class TableController {
 	@GetMapping("/recommend")
 	public RestaurantTable getRecommendation(
 			@RequestParam int groupSize,
-			@RequestParam(required = false) boolean prefersWindow){
-		return tableService.recommendBestTable(groupSize, prefersWindow);
+			@RequestParam(required = false) boolean prefersWindow,
+			@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime time
+	) {
+		return tableService.recommendBestTable(groupSize, time, prefersWindow);
 	}
+//endregion
+//region Post
+	@PostMapping("/tables") // Puhas ja selge tee
+	public RestaurantTable createTable(
+			@RequestParam int capacity,
+			@RequestParam int x,
+			@RequestParam int y,
+			@RequestParam boolean windowSeat,
+			@RequestParam boolean quietArea
+	) {
+		return tableService.saveNewTable(capacity, x, y, windowSeat, quietArea);
+	}
+//endregion
 }

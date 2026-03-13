@@ -3,11 +3,9 @@ package com.example.restaurantreservationapi.controller;
 import com.example.restaurantreservationapi.entity.Reservation;
 import com.example.restaurantreservationapi.service.ReservationService;
 import com.example.restaurantreservationapi.service.TableService;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -19,9 +17,19 @@ public class ReservationController {
 	public ReservationController(ReservationService reservationService, TableService tableService) {
 		this.reservationService = reservationService;
 	}
-
+//region Get
 	@GetMapping
 	public List<Reservation> getReservations(){
 		return reservationService.getAllReservations();
 	}
+//endregion
+//region Post
+	@PostMapping
+	public Reservation createReservation(@RequestParam int groupSize,
+	                                     @RequestParam LocalDateTime reservationTimeStart,
+	                                     @RequestParam LocalDateTime reservationTimeEnd
+	) {
+		return reservationService.saveNewReservation(groupSize, reservationTimeStart, reservationTimeEnd);
+	}
+	//endregion
 }

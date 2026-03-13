@@ -2,13 +2,18 @@ package com.example.restaurantreservationapi.entity;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
 @Data
 @Entity
-
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class RestaurantTable {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -20,10 +25,8 @@ public class RestaurantTable {
 	private int x;
 	private int y;
 
-	private boolean isWindowSeat;
-	private boolean isQuietArea;
-
-	private boolean isOccupied;
+	private boolean windowSeat;
+	private boolean quietArea;
 
 	@ManyToMany(mappedBy = "tables")
 	@JsonBackReference
