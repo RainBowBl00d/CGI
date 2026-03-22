@@ -33,9 +33,20 @@ const filteredTables = computed(() => {
 const reservationTimeEnd = computed(() => {
   if (!reservationTimeStart.value) return '';
   // Parse datetime-local format (YYYY-MM-DDTHH:MM)
-  const [datePart, timePart] = reservationTimeStart.value.split('T');
-  const [year, month, day] = datePart.split('-').map(Number);
-  const [hour, minute] = timePart.split(':').map(Number);
+  const parts = reservationTimeStart.value.split('T');
+  const datePart = parts[0];
+  const timePart = parts[1];
+  if (!datePart || !timePart) return '';
+
+  const dateParts = datePart.split('-').map(Number);
+  const timeParts = timePart.split(':').map(Number);
+  const year = dateParts[0];
+  const month = dateParts[1];
+  const day = dateParts[2];
+  const hour = timeParts[0];
+  const minute = timeParts[1];
+
+  if (year === undefined || month === undefined || day === undefined || hour === undefined || minute === undefined) return '';
 
   const start = new Date(year, month - 1, day, hour, minute);
   const end = new Date(start.getTime() + 3 * 60 * 60 * 1000); // +3 hours
@@ -243,7 +254,7 @@ onMounted(() => {
             :key="table.id"
             :table="table"
             :isReserved="reservedTableIds.has(table.id)"
-            :isSelected="selectedTables.some(t => t.id === table.id)"
+            :isSelected="selectedTables?.some(t => t.id === table.id) ?? false"
           />
         </div>
       </div>
@@ -278,7 +289,7 @@ onMounted(() => {
           />
 
           <ReservationSummary
-            v-if="selectedTables.length > 0"
+            v-if="selectedTables && selectedTables.length > 0"
             :tables="selectedTables"
             :groupSize="groupSize"
             :reservationTimeStart="reservationTimeStart"

@@ -14,7 +14,7 @@ const props = withDefaults(defineProps<Props>(), {
   initialReservationTimeStart: '',
   initialWindowSeat: false,
   initialQuietArea: false,
-  initialZone: ''
+  initialZone: 'Main hall'
 });
 
 const emit = defineEmits<{
@@ -28,11 +28,11 @@ const emit = defineEmits<{
 }>();
 
 // Local state
-const groupSize = ref<number>(props.initialGroupSize);
-const reservationTimeStart = ref<string>(props.initialReservationTimeStart);
-const windowSeat = ref<boolean>(props.initialWindowSeat);
-const quietArea = ref<boolean>(props.initialQuietArea);
-const zone = ref<string>(props.initialZone);
+const groupSize = ref<number>(props.initialGroupSize ?? 2);
+const reservationTimeStart = ref<string>(props.initialReservationTimeStart ?? '');
+const windowSeat = ref<boolean>(props.initialWindowSeat ?? false);
+const quietArea = ref<boolean>(props.initialQuietArea ?? false);
+const zone = ref<string>(props.initialZone ?? 'Main hall');
 
 // Separate date and time for better UX
 const selectedDate = ref<string>('');
@@ -40,9 +40,11 @@ const selectedHour = ref<string>('');
 
 // Initialize separate date/time from initial value
 if (props.initialReservationTimeStart) {
-  const [datePart, timePart] = props.initialReservationTimeStart.split('T');
-  selectedDate.value = datePart;
-  selectedHour.value = timePart?.split(':')[0] || '';
+  const parts = props.initialReservationTimeStart.split('T');
+  const datePart = parts[0];
+  const timePart = parts[1];
+  selectedDate.value = datePart ?? '';
+  selectedHour.value = timePart?.split(':')[0] ?? '';
 }
 
 // Available hours (10:00 - 22:00)
