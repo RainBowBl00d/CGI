@@ -22,14 +22,22 @@ public class ReservationController {
 	public List<Reservation> getReservations(){
 		return reservationService.getAllReservations();
 	}
+
+	@GetMapping("/active")
+	public List<Reservation> getActiveReservations() {
+		LocalDateTime now = LocalDateTime.now();
+		return reservationService.getActiveReservationsAt(now);
+	}
 //endregion
 //region Post
 	@PostMapping
-	public Reservation createReservation(@RequestParam int groupSize,
-	                                     @RequestParam LocalDateTime reservationTimeStart,
-	                                     @RequestParam LocalDateTime reservationTimeEnd
+	public Reservation createReservation(
+			@RequestParam int groupSize,
+			@RequestParam LocalDateTime reservationTimeStart,
+			@RequestParam LocalDateTime reservationTimeEnd,
+			@RequestParam(required = false) List<Long> tableIds
 	) {
-		return reservationService.saveNewReservation(groupSize, reservationTimeStart, reservationTimeEnd);
+		return reservationService.saveNewReservation(groupSize, reservationTimeStart, reservationTimeEnd, tableIds);
 	}
 	//endregion
 }

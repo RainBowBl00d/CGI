@@ -2,7 +2,7 @@
 import type { RestaurantTable } from '@/types';
 
 interface Props {
-  table: RestaurantTable;
+  tables: RestaurantTable[];
   groupSize: number;
   reservationTimeStart: string;
   reservationTimeEnd: string;
@@ -40,32 +40,34 @@ const handleConfirm = () => {
 
     <div class="summary-content">
       <div class="summary-section">
-        <h3>Valitud laud</h3>
-        <div class="summary-details">
-          <div class="detail-row">
-            <span class="label">Laua number:</span>
-            <span class="value">#{{ table.id }}</span>
-          </div>
-          <div class="detail-row">
-            <span class="label">Mahutavus:</span>
-            <span class="value">{{ table.capacity }} inimest</span>
-          </div>
-          <div class="detail-row">
-            <span class="label">Tsoon:</span>
-            <span class="value">{{ table.zone || 'N/A' }}</span>
-          </div>
-          <div class="detail-row">
-            <span class="label">Asukoht:</span>
-            <span class="value">X: {{ table.x }}, Y: {{ table.y }}</span>
-          </div>
+        <h3>Valitud laud(ud)</h3>
+        <div v-for="table in tables" :key="table.id" class="table-summary">
+          <div class="summary-details">
+            <div class="detail-row">
+              <span class="label">Laua number:</span>
+              <span class="value">#{{ table.id }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Mahutavus:</span>
+              <span class="value">{{ table.capacity }} inimest</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Tsoon:</span>
+              <span class="value">{{ table.zone || 'N/A' }}</span>
+            </div>
 
-          <div v-if="table.windowSeat || table.quietArea" class="features-summary">
-            <span class="label">Omadused:</span>
-            <div class="features-list">
-              <span v-if="table.windowSeat" class="feature">🪟 Aknakoht</span>
-              <span v-if="table.quietArea" class="feature">🤫 Vaikne ala</span>
+            <div v-if="table.windowSeat || table.quietArea" class="features-summary">
+              <span class="label">Omadused:</span>
+              <div class="features-list">
+                <span v-if="table.windowSeat" class="feature">🪟 Aknakoht</span>
+                <span v-if="table.quietArea" class="feature">🤫 Vaikne ala</span>
+              </div>
             </div>
           </div>
+        </div>
+        <div v-if="tables.length > 1" class="total-capacity">
+          <span class="label">Kokku mahutavus:</span>
+          <span class="value">{{ tables.reduce((sum, t) => sum + t.capacity, 0) }} inimest</span>
         </div>
       </div>
 
@@ -134,10 +136,33 @@ h2 {
   padding-bottom: 0.5rem;
 }
 
+.table-summary {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background: white;
+  border-radius: 4px;
+  border-left: 3px solid #28a745;
+}
+
+.table-summary:last-of-type {
+  margin-bottom: 0.5rem;
+}
+
 .summary-details {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+}
+
+.total-capacity {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: white;
+  border-radius: 4px;
+  font-weight: bold;
+  margin-top: 0.5rem;
 }
 
 .detail-row {

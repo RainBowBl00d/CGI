@@ -24,12 +24,19 @@ public class TableController {
 	}
 
 	@GetMapping("/recommend")
-	public RestaurantTable getRecommendation(
+	public List<List<RestaurantTable>> getRecommendation(
 			@RequestParam int groupSize,
 			@RequestParam(required = false) boolean prefersWindow,
+			@RequestParam(required = false) boolean prefersQuiet,
+			@RequestParam(required = false) String zone,
 			@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime time
 	) {
-		return tableService.recommendBestTable(groupSize, time, prefersWindow);
+		// Validate reservation time is within reasonable hours (10:00 - 22:00)
+		int hour = time.getHour();
+		if (hour < 10 || hour > 22) {
+			throw new IllegalArgumentException("Broneeringuid saab teha ainult vahemikus 10:00-22:00");
+		}
+		return tableService.recommendTableOptions(groupSize, time, prefersWindow, prefersQuiet, zone);
 	}
 //endregion
 //region Post

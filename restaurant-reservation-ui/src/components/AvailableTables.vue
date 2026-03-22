@@ -2,68 +2,67 @@
 import type { RestaurantTable } from '@/types';
 
 interface Props {
-  tables: RestaurantTable[];
-  selectedTable: RestaurantTable | null;
+  tableOptions: RestaurantTable[][];
+  selectedOptionIndex: number;
 }
 
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-  'select-table': [table: RestaurantTable]
+  'select-option': [index: number]
 }>();
 
-const selectTable = (table: RestaurantTable) => {
-  emit('select-table', table);
+const selectOption = (index: number) => {
+  emit('select-option', index);
 };
 
-const isSelected = (table: RestaurantTable): boolean => {
-  return props.selectedTable?.id === table.id;
+const isSelected = (index: number): boolean => {
+  return props.selectedOptionIndex === index;
 };
 </script>
 
 <template>
   <div class="available-tables">
-    <h2>Saadaolevad lauad</h2>
+    <h2>Soovitatud lauad</h2>
 
-    <div v-if="tables.length === 0" class="no-tables">
+    <div v-if="tableOptions.length === 0" class="no-tables">
       Vabu laudu ei leitud. Proovi muuta filtreid.
     </div>
 
-    <div v-else class="tables-grid">
+    <div v-else class="options-list">
       <div
-        v-for="table in tables"
-        :key="table.id"
-        class="table-card"
-        :class="{ selected: isSelected(table) }"
-        @click="selectTable(table)"
+        v-for="(option, index) in tableOptions"
+        :key="index"
+        class="option-card"
+        :class="{ selected: isSelected(index) }"
+        @click="selectOption(index)"
       >
-        <div class="table-header">
-          <h3>Laud #{{ table.id }}</h3>
-          <span class="capacity-badge">{{ table.capacity }} kohta</span>
+        <div class="option-header">
+          <h3>Valik {{ index + 1 }}</h3>
+          <span class="capacity-badge">
+            {{ option.reduce((sum, t) => sum + t.capacity, 0) }} kohta kokku
+          </span>
         </div>
 
-        <div class="table-details">
-          <div class="detail-item">
-            <span class="detail-label">Tsoon:</span>
-            <span class="detail-value">{{ table.zone || 'N/A' }}</span>
-          </div>
-
-          <div class="detail-item">
-            <span class="detail-label">Asukoht:</span>
-            <span class="detail-value">X: {{ table.x }}, Y: {{ table.y }}</span>
-          </div>
-
-          <div class="features">
-            <span v-if="table.windowSeat" class="feature-badge window">
-              🪟 Aknakoht
-            </span>
-            <span v-if="table.quietArea" class="feature-badge quiet">
-              🤫 Vaikne ala
-            </span>
+        <div class="tables-in-option">
+          <div v-for="table in option" :key="table.id" class="table-info">
+            <div class="table-name">Laud #{{ table.id }}</div>
+            <div class="table-meta">
+              <span class="meta-item">{{ table.capacity }} in.</span>
+              <span class="meta-item">{{ table.zone }}</span>
+            </div>
+            <div class="features">
+              <span v-if="table.windowSeat" class="feature-badge window">
+                🪟 Aknakoht
+              </span>
+              <span v-if="table.quietArea" class="feature-badge quiet">
+                🤫 Vaikne ala
+              </span>
+            </div>
           </div>
         </div>
 
-        <div v-if="isSelected(table)" class="selected-indicator">
+        <div v-if="isSelected(index)" class="selected-indicator">
           ✓ Valitud
         </div>
       </div>
@@ -93,13 +92,13 @@ h2 {
   border-radius: 4px;
 }
 
-.tables-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.5rem;
+.options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
-.table-card {
+.option-card {
   border: 2px solid #e9ecef;
   border-radius: 8px;
   padding: 1.5rem;
@@ -108,19 +107,19 @@ h2 {
   background: #fff;
 }
 
-.table-card:hover {
+.option-card:hover {
   border-color: #007bff;
   box-shadow: 0 4px 8px rgba(0, 123, 255, 0.2);
   transform: translateY(-2px);
 }
 
-.table-card.selected {
+.option-card.selected {
   border-color: #28a745;
   background: #f0fff4;
   box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
 }
 
-.table-header {
+.option-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -129,7 +128,7 @@ h2 {
   border-bottom: 1px solid #e9ecef;
 }
 
-.table-header h3 {
+.option-header h3 {
   margin: 0;
   font-size: 1.25rem;
   color: #2c3e50;
@@ -144,24 +143,34 @@ h2 {
   font-weight: 600;
 }
 
-.table-details {
+.tables-in-option {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1rem;
 }
 
-.detail-item {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.95rem;
+.table-info {
+  padding: 0.75rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border-left: 3px solid #007bff;
 }
 
-.detail-label {
+.table-name {
   font-weight: 600;
-  color: #495057;
+  font-size: 1rem;
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
 }
 
-.detail-value {
+.table-meta {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.meta-item {
+  font-size: 0.9rem;
   color: #6c757d;
 }
 
@@ -197,11 +206,5 @@ h2 {
   text-align: center;
   border-radius: 4px;
   font-weight: 600;
-}
-
-@media (max-width: 768px) {
-  .tables-grid {
-    grid-template-columns: 1fr;
-  }
 }
 </style>

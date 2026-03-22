@@ -39,33 +39,80 @@ public class TableService {
 		);
 	}
 
-	public RestaurantTable recommendBestTable(int groupSize, LocalDateTime requestedTime, boolean prefersWindow) {
-		// 1. Võta kõik lauad
+	public List<List<RestaurantTable>> recommendTableOptions(int groupSize, LocalDateTime requestedTime, boolean prefersWindow, boolean prefersQuiet, String zone) {
+		// 1. Get all tables
 		List<RestaurantTable> allTables = tableRepository.findAll();
 
-		// 2. Võta broneeringud, mis sel ajal toimuvad
-		List<Reservation> activeReservations = reservationRepository.findActiveReservationsAt(requestedTime);
+		// 2. Get active reservations at requested time (with 3-hour duration)
+		LocalDateTime endTime = requestedTime.plusHours(3);
+		List<Reservation> activeReservations = reservationRepository.findActiveReservationsAt(requestedTime, endTime);
 
-		// 3. Kogu kokku kõik laudade ID-d, mis on broneeritud
+		// 3. Collect occupied table IDs
 		Set<Long> occupiedTableIds = activeReservations.stream()
 				.flatMap(res -> res.getTables().stream())
 				.map(RestaurantTable::getId)
 				.collect(Collectors.toSet());
 
-		// 4. Filtreeri vabad lauad, mis sobivad seltskonnale
-		return allTables.stream()
-				.filter(t -> !occupiedTableIds.contains(t.getId())) // Laud ei tohi olla hõivatud
-				.filter(t -> t.getCapacity() >= groupSize)          // Mahutavus peab olema piisav
-				.min(Comparator.comparingInt((RestaurantTable t) -> calculateScore(t, groupSize, prefersWindow)))
-				.orElse(null);
+		// 4. Filter available tables
+		List<RestaurantTable> availableTables = allTables.stream()
+				.filter(t -> !occupiedTableIds.contains(t.getId()))
+				.filter(t -> zone == null || zone.isEmpty() || zone.equals(t.getZone()))
+				.sorted(Comparator.comparingInt((RestaurantTable t) -> calculateScore(t, groupSize, prefersWindow, prefersQuiet)))
+				.collect(Collectors.toList());
+
+		// 5. Generate table combinations
+		List<List<RestaurantTable>> options = new java.util.ArrayList<>();
+		Set<Set<Long>> usedCombinations = new java.util.HashSet<>();
+
+		// Option 1: Single table that fits the group
+		availableTables.stream()
+				.filter(t -> t.getCapacity() >= groupSize)
+				.limit(3) // Top 3 single table options
+				.forEach(t -> {
+					Set<Long> combo = Set.of(t.getId());
+					if (usedCombinations.add(combo)) {
+						options.add(List.of(t));
+					}
+				});
+
+		// Option 2: Combination of 2 tables for larger groups (or if no single table found)
+		if (options.isEmpty() || groupSize > 6) {
+			for (int i = 0; i < availableTables.size() && options.size() < 5; i++) {
+				for (int j = i + 1; j < availableTables.size() && options.size() < 5; j++) {
+					RestaurantTable t1 = availableTables.get(i);
+					RestaurantTable t2 = availableTables.get(j);
+					if (t1.getCapacity() + t2.getCapacity() >= groupSize) {
+						Set<Long> combo = Set.of(t1.getId(), t2.getId());
+						if (usedCombinations.add(combo)) {
+							options.add(List.of(t1, t2));
+						}
+					}
+				}
+			}
+		}
+
+		return options;
 	}
 
-	private int calculateScore(RestaurantTable table, int groupSize, boolean prefersWindow) {
+	private int calculateScore(RestaurantTable table, int groupSize, boolean prefersWindow, boolean prefersQuiet) {
 		int score = 0;
 
-		score += (table.getCapacity() - groupSize) * 10;
+		// Lower score is better - prefer tables closer to group size
+		int capacityDiff = table.getCapacity() - groupSize;
+		if (capacityDiff < 0) {
+			// Table too small - heavily penalize
+			score += 1000;
+		} else {
+			// Prefer tables with minimal excess capacity
+			score += capacityDiff * 10;
+		}
 
+		// Penalize if preferences don't match
 		if (prefersWindow && !table.isWindowSeat()) {
+			score += 50;
+		}
+
+		if (prefersQuiet && !table.isQuietArea()) {
 			score += 50;
 		}
 

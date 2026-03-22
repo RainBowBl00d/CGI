@@ -9,6 +9,4 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface TableRepository  extends JpaRepository<RestaurantTable, Long> {
-	@Query("SELECT r FROM Reservation r WHERE :time >= r.reservationTimeStart AND :time < r.reservationTimeEnd")
-	List<Reservation> findActiveReservationsAt(LocalDateTime time);
 }

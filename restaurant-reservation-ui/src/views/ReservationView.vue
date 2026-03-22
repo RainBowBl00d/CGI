@@ -12,19 +12,42 @@ const groupSize = ref<number>(2);
 const reservationTimeStart = ref<string>('');
 const windowSeat = ref<boolean>(false);
 const quietArea = ref<boolean>(false);
-const availableTables = ref<RestaurantTable[]>([]);
-const selectedTable = ref<RestaurantTable | null>(null);
+const zone = ref<string>('');
+const tableOptions = ref<RestaurantTable[][]>([]);
+const selectedOptionIndex = ref<number>(-1);
 const loading = ref<boolean>(false);
 const error = ref<string>('');
 const allTables = ref<RestaurantTable[]>([]);
 const loadingFloorPlan = ref<boolean>(true);
+const reservedTableIds = ref<Set<number>>(new Set());
+
+// Computed property for filtered tables based on selected zone
+const filteredTables = computed(() => {
+  if (!zone.value) {
+    return allTables.value;
+  }
+  return allTables.value.filter(table => table.zone === zone.value);
+});
 
 // Computed
 const reservationTimeEnd = computed(() => {
   if (!reservationTimeStart.value) return '';
-  const start = new Date(reservationTimeStart.value);
-  const end = new Date(start.getTime() + 2 * 60 * 60 * 1000); // +2 hours
-  return end.toISOString().slice(0, 16);
+  // Parse datetime-local format (YYYY-MM-DDTHH:MM)
+  const [datePart, timePart] = reservationTimeStart.value.split('T');
+  const [year, month, day] = datePart.split('-').map(Number);
+  const [hour, minute] = timePart.split(':').map(Number);
+
+  const start = new Date(year, month - 1, day, hour, minute);
+  const end = new Date(start.getTime() + 3 * 60 * 60 * 1000); // +3 hours
+
+  // Format back to datetime-local format
+  const endYear = end.getFullYear();
+  const endMonth = String(end.getMonth() + 1).padStart(2, '0');
+  const endDay = String(end.getDate()).padStart(2, '0');
+  const endHour = String(end.getHours()).padStart(2, '0');
+  const endMinute = String(end.getMinutes()).padStart(2, '0');
+
+  return `${endYear}-${endMonth}-${endDay}T${endHour}:${endMinute}`;
 });
 
 // Methods
@@ -33,11 +56,13 @@ const handleFilterChange = async (filters: {
   reservationTimeStart: string;
   windowSeat: boolean;
   quietArea: boolean;
+  zone: string;
 }) => {
   groupSize.value = filters.groupSize;
   reservationTimeStart.value = filters.reservationTimeStart;
   windowSeat.value = filters.windowSeat;
   quietArea.value = filters.quietArea;
+  zone.value = filters.zone;
 
   if (reservationTimeStart.value) {
     await fetchRecommendation();
@@ -52,39 +77,52 @@ const fetchRecommendation = async () => {
 
   loading.value = true;
   error.value = '';
-  selectedTable.value = null;
+  selectedOptionIndex.value = -1;
 
   try {
-    const response = await api.get<RestaurantTable>('/tables/recommend', {
+    const response = await api.get<RestaurantTable[][]>('/tables/recommend', {
       params: {
         groupSize: groupSize.value,
         prefersWindow: windowSeat.value,
+        prefersQuiet: quietArea.value,
+        zone: zone.value || undefined,
         time: reservationTimeStart.value
       }
     });
 
-    if (response.data) {
-      availableTables.value = [response.data];
-      selectedTable.value = response.data;
+    if (response.data && response.data.length > 0) {
+      // Store table options (combinations)
+      tableOptions.value = response.data;
+      // Auto-select first option
+      selectedOptionIndex.value = 0;
+      // Update reserved tables display
+      updateReservedTables();
     } else {
-      availableTables.value = [];
+      tableOptions.value = [];
       error.value = 'Vabu laudu ei leitud';
     }
   } catch (err: any) {
     console.error('Error fetching recommendation:', err);
     error.value = err.response?.data?.message || 'Viga soovituse laadimisel';
-    availableTables.value = [];
+    tableOptions.value = [];
   } finally {
     loading.value = false;
   }
 };
 
-const handleTableSelect = (table: RestaurantTable) => {
-  selectedTable.value = table;
+const handleOptionSelect = (index: number) => {
+  selectedOptionIndex.value = index;
 };
 
+const selectedTables = computed(() => {
+  if (selectedOptionIndex.value >= 0 && selectedOptionIndex.value < tableOptions.value.length) {
+    return tableOptions.value[selectedOptionIndex.value];
+  }
+  return [];
+});
+
 const handleReservationConfirm = async () => {
-  if (!selectedTable.value || !reservationTimeStart.value) {
+  if (selectedTables.value.length === 0 || !reservationTimeStart.value) {
     error.value = 'Palun vali laud ja aeg';
     return;
   }
@@ -93,20 +131,26 @@ const handleReservationConfirm = async () => {
   error.value = '';
 
   try {
+    const tableIds = selectedTables.value.map(t => t.id);
     const response = await api.post<Reservation>('/reservations', null, {
       params: {
         groupSize: groupSize.value,
         reservationTimeStart: reservationTimeStart.value,
-        reservationTimeEnd: reservationTimeEnd.value
+        reservationTimeEnd: reservationTimeEnd.value,
+        tableIds: tableIds
       }
     });
 
     if (response.data) {
       alert(`Broneering loodud! ID: ${response.data.id}`);
       // Reset state
-      selectedTable.value = null;
-      availableTables.value = [];
+      selectedOptionIndex.value = -1;
+      tableOptions.value = [];
       reservationTimeStart.value = '';
+      groupSize.value = 2;
+      windowSeat.value = false;
+      quietArea.value = false;
+      zone.value = '';
       // Refresh floor plan
       await fetchAllTables();
     }
@@ -123,11 +167,58 @@ const fetchAllTables = async () => {
   try {
     const response = await api.get<RestaurantTable[]>('/tables');
     allTables.value = response.data;
+
+    // Always update reserved tables display
+    updateReservedTables();
   } catch (err) {
     console.error('Error fetching all tables:', err);
   } finally {
     loadingFloorPlan.value = false;
   }
+};
+
+const updateReservedTables = async () => {
+  // Get tables that have reservations overlapping with selected time
+  const reserved = new Set<number>();
+
+  try {
+    // Fetch all reservations and check for overlaps
+    const response = await api.get<Reservation[]>('/reservations');
+
+    if (!reservationTimeStart.value) {
+      // If no time selected, show currently active reservations
+      const now = new Date();
+      response.data.forEach(reservation => {
+        const resStart = new Date(reservation.reservationTimeStart);
+        const resEnd = new Date(reservation.reservationTimeEnd);
+        if (now >= resStart && now < resEnd) {
+          reservation.tables.forEach(table => {
+            reserved.add(table.id);
+          });
+        }
+      });
+    } else {
+      // Show reservations overlapping with selected time
+      const selectedStart = new Date(reservationTimeStart.value);
+      const selectedEnd = new Date(reservationTimeEnd.value);
+
+      response.data.forEach(reservation => {
+        const resStart = new Date(reservation.reservationTimeStart);
+        const resEnd = new Date(reservation.reservationTimeEnd);
+
+        // Check if time ranges overlap
+        if (selectedStart < resEnd && selectedEnd > resStart) {
+          reservation.tables.forEach(table => {
+            reserved.add(table.id);
+          });
+        }
+      });
+    }
+  } catch (err) {
+    console.error('Error fetching reservations:', err);
+  }
+
+  reservedTableIds.value = reserved;
 };
 
 onMounted(() => {
@@ -141,14 +232,18 @@ onMounted(() => {
       <!-- Left side: Floor Plan -->
       <div class="floor-plan-section">
         <h2>Restorani saaliplaan</h2>
+        <p v-if="zone" class="zone-label">Tsoon: {{ zone === 'Main Hall' ? 'Sisesaal' : zone === 'Terrace' ? 'Terrass' : 'Privaatruum' }}</p>
+        <p v-else class="zone-label">Kõik tsoonid</p>
 
         <div v-if="loadingFloorPlan" class="loading">Laadin laudu...</div>
 
         <div v-else class="floor-canvas">
           <RestaurantTableComponent
-            v-for="table in allTables"
+            v-for="table in filteredTables"
             :key="table.id"
             :table="table"
+            :isReserved="reservedTableIds.has(table.id)"
+            :isSelected="selectedTables.some(t => t.id === table.id)"
           />
         </div>
       </div>
@@ -163,6 +258,7 @@ onMounted(() => {
             :initialReservationTimeStart="reservationTimeStart"
             :initialWindowSeat="windowSeat"
             :initialQuietArea="quietArea"
+            :initialZone="zone"
             @filter-change="handleFilterChange"
           />
 
@@ -175,15 +271,15 @@ onMounted(() => {
           </div>
 
           <AvailableTables
-            v-if="!loading && availableTables.length > 0"
-            :tables="availableTables"
-            :selectedTable="selectedTable"
-            @select-table="handleTableSelect"
+            v-if="!loading && tableOptions.length > 0"
+            :tableOptions="tableOptions"
+            :selectedOptionIndex="selectedOptionIndex"
+            @select-option="handleOptionSelect"
           />
 
           <ReservationSummary
-            v-if="selectedTable"
-            :table="selectedTable"
+            v-if="selectedTables.length > 0"
+            :tables="selectedTables"
             :groupSize="groupSize"
             :reservationTimeStart="reservationTimeStart"
             :reservationTimeEnd="reservationTimeEnd"
@@ -221,6 +317,13 @@ h2 {
   margin: 0 0 1rem 0;
   color: #2c3e50;
   font-size: 1.75rem;
+}
+
+.zone-label {
+  margin: 0 0 1rem 0;
+  color: #495057;
+  font-size: 1rem;
+  font-weight: 600;
 }
 
 .floor-canvas {

@@ -6,6 +6,7 @@ export interface RestaurantTable {
   y: number;
   windowSeat: boolean;
   quietArea: boolean;
+  shape: 'CIRCLE' | 'SQUARE' | 'RECTANGLE';
   reservations: Reservation[];
 }
 export interface Reservation{

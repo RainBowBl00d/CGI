@@ -28,6 +28,9 @@ public class RestaurantTable {
 	private boolean windowSeat;
 	private boolean quietArea;
 
+	@Enumerated(EnumType.STRING)
+	private TableShape shape;
+
 	@ManyToMany(mappedBy = "tables")
 	@JsonBackReference
 	private List<Reservation> reservations;
