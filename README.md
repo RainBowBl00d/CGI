@@ -137,4 +137,4 @@ Rakendus kasutab mälusse jäävat või konfigureeritud andmebaasi (H2).
 - Algusaeg: 13 Märts
 - Kokku kulunud tunnid: u 30h
 - Tekkinud väljakutsed: Springbooti õppimine 
-- Kasutatud lahendused/Ressursid: Kasutatud on siin projektis abiks ka Gemini 3 
+- Kasutatud lahendused/Ressursid: Kasutatud on siin projektis ka Gemini 3 LLM'i  
